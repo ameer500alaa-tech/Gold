@@ -38,6 +38,7 @@ tr.fut td{color:var(--fg);font-weight:600}tr.past td{color:var(--mute)}
 .tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--mute);margin-inline-end:6px}
 .note{font-size:12px;color:var(--mute)}
 .lvl{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px}
+.ev{padding:8px 0;border-bottom:1px solid var(--line)}.ev.past{opacity:.6}.evt{font-size:12px;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -68,7 +69,7 @@ tr.fut td{color:var(--fg);font-weight:600}tr.past td{color:var(--mute)}
 
   <section class="card">
     <h2>أحداث اقتصادية (آخر 24 ساعة والقادمة 24 ساعة) · توقيت الرياض</h2>
-    <div class="scroll"><table id="cal"></table></div>
+    <div id="cal"></div>
   </section>
 
   <section class="card">
@@ -151,7 +152,7 @@ const GQ = {
 };
 function gdeltDate(x) { const m = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/.exec(x || ""); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : new Date(NaN); }
 async function fetchNews() {
-  const items = [], seen = new Set(), errs = []; let ok = false;
+  const items = [], seen = new Set(), errs = [];
   const add = (cat, title, link, when) => {
     if (!title || seen.has(title) || isNaN(when) || Date.now() - when > 864e5) return;
     seen.add(title);
@@ -163,24 +164,31 @@ async function fetchNews() {
   for (const [cat, q] of Object.entries(GQ)) {
     if (i++) await sleep(5500);
     try {
-      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(q + " sourcelang:english") + "&mode=artlist&format=json&maxrecords=25&timespan=24h&sort=datedesc";
-      const j = JSON.parse(await getText(url, isJson(x => x && typeof x === "object"), true));
-      (j.articles || []).forEach(a => add(cat, a.title, a.url, gdeltDate(a.seendate)));
-      ok = true;
-    } catch (e) { errs.push("GDELT " + msg(e)); }
+      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(q + " sourcelang:english") + "&mode=ArtList&format=json&maxrecords=25&timespan=24h&sort=DateDesc";
+      const t = await getText(url, x => { const y = x.trim(); return y === "" || y.startsWith("{"); }, true);
+      let j = {}; try { j = JSON.parse(t); } catch (e) {}
+      const arts = j.articles || [];
+      arts.forEach(a => add(cat, a.title, a.url, gdeltDate(a.seendate)));
+      if (!arts.length) errs.push("GDELT(" + cat + "): 0 مقال");
+    } catch (e) { errs.push("GDELT(" + cat + "): " + msg(e)); }
   }
   if (!items.length) {
     for (const [cat, q] of Object.entries(QUERIES)) {
+      const g = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
       try {
-        const g = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
         const j = JSON.parse(await getText("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(g), isJson(x => x && x.items), true));
         j.items.forEach(a => add(cat, a.title, a.link, new Date(String(a.pubDate).replace(" ", "T") + "Z")));
-        ok = true;
-      } catch (e) { errs.push("RSS " + msg(e)); }
+      } catch (e) {
+        errs.push("RSS2JSON(" + cat + "): " + msg(e));
+        try {
+          const xml = new DOMParser().parseFromString(await getText(g, x => x.includes("<item")), "text/xml");
+          xml.querySelectorAll("item").forEach(it => add(cat, it.querySelector("title")?.textContent, it.querySelector("link")?.textContent, new Date(it.querySelector("pubDate")?.textContent || "")));
+        } catch (e2) { errs.push("GNEWS(" + cat + "): " + msg(e2)); }
+      }
     }
   }
   if (items.length) { items.sort((a, b) => b.when - a.when); S.news = items.slice(0, 30); }
-  setStatus("الأخبار", ok && items.length > 0, ok ? "لا أخبار في آخر 24 ساعة" : errs.join(" | "));
+  setStatus("الأخبار", items.length > 0, errs.join(" | ") || "لا أخبار");
 }
 
 /* ---------- التقويم الاقتصادي ---------- */
@@ -262,7 +270,12 @@ function draw(a) {
   const Y = p => padT + (ymax - p) / (ymax - ymin) * (H - padT - padB);
   g.strokeStyle = css("--line"); g.fillStyle = css("--mute"); g.font = "11px system-ui"; g.lineWidth = 1;
   for (let i = 0; i <= 4; i++) { const p = ymin + (ymax - ymin) * i / 4, y = Y(p); g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke(); g.fillText(p.toFixed(0), W - padR + 4, y + 4); }
-  for (let k = 0; k <= 4; k++) { const t = t0 + (t1 - t0) * k / 4; g.fillText(hhmm(t * 1000), Math.min(X(t) - 12, W - padR - 28), H - 5); }
+  g.font = "10px system-ui";
+  for (let k = 0; k <= 4; k++) {
+    const t = t0 + (t1 - t0) * k / 4, lab = dmhm(t * 1000), w = g.measureText(lab).width;
+    g.fillText(lab, Math.max(2, Math.min(X(t) - w / 2, W - w - 2)), H - 5);
+  }
+  g.font = "11px system-ui";
   const band = (hrs, fill) => {
     const N = 24; g.beginPath();
     for (let i = 0; i <= N; i++) { const th = hrs * 3600 * i / N, n = th / a.step, p = a.last * Math.exp(a.sigma * 1.28 * Math.sqrt(n)); const x = X(a.lastT + th), y = Y(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }
@@ -275,6 +288,7 @@ function draw(a) {
   a.h24.forEach((p, i) => { const x = X(p[0]), y = Y(p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
   g.fillStyle = css("--gold"); g.beginPath(); g.arc(X(a.lastT), Y(a.last), 4, 0, 7); g.fill();
   g.strokeStyle = css("--mute"); g.lineWidth = 1; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(X(a.lastT), padT); g.lineTo(X(a.lastT), H - padB); g.stroke(); g.setLineDash([]);
+  g.fillStyle = css("--mute"); g.fillText("الآن", X(a.lastT) + 4, padT + 10);
 }
 
 /* ---------- العرض ---------- */
@@ -300,10 +314,15 @@ function render() {
     $("#ranges").innerHTML = "<div><b>12 ساعة</b><br>" + f(a.p12.lo) + " ← " + f(a.p12.hi) + "<br><span class='note'>وسط " + f(a.p12.mid) + "</span></div><div><b>24 ساعة</b><br>" + f(a.p24.lo) + " ← " + f(a.p24.hi) + "<br><span class='note'>وسط " + f(a.p24.mid) + "</span></div>";
   }
   const t = $("#cal"); t.textContent = "";
-  const head = document.createElement("tr"); ["الوقت", "العملة", "الحدث", "الأثر", "متوقع", "سابق"].forEach(h => { const th = document.createElement("th"); th.textContent = h; head.append(th); }); t.append(head);
-  if (!S.cal.length) { const tr = document.createElement("tr"), td = document.createElement("td"); td.colSpan = 6; td.textContent = "لا أحداث مهمة في هذه الفترة"; tr.append(td); t.append(tr); }
-  S.cal.forEach(e => { const tr = document.createElement("tr"); tr.className = e.when > Date.now() ? "fut" : "past";
-    [dmhm(e.when), e.country, e.title, e.impact === "High" ? "عالي" : "متوسط", e.forecast, e.previous].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); }); t.append(tr); });
+  if (!S.cal.length) { const d = document.createElement("div"); d.className = "note"; d.textContent = "لا أحداث مهمة في هذه الفترة"; t.append(d); }
+  S.cal.forEach(e => {
+    const d = document.createElement("div"), a1 = document.createElement("div"), b1 = document.createElement("div"), c1 = document.createElement("div");
+    d.className = "ev " + (e.when > Date.now() ? "fut" : "past");
+    a1.className = "evt"; a1.textContent = (e.when > Date.now() ? "قادم" : "صدر") + " · " + dmhm(e.when) + " · " + e.country + " · " + (e.impact === "High" ? "أثر عالي" : "أثر متوسط");
+    b1.textContent = e.title;
+    c1.className = "note"; c1.textContent = "متوقع: " + (e.forecast || "—") + " · سابق: " + (e.previous || "—");
+    d.append(a1, b1, c1); t.append(d);
+  });
   const nl = $("#news"); nl.textContent = "";
   if (!S.news.length) { const li = document.createElement("li"); li.textContent = "لا أخبار حالياً"; nl.append(li); }
   S.news.forEach(n => {
