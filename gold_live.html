@@ -4,78 +4,77 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0e1116">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <title>مراقب الذهب</title>
 <style>
-:root{--bg:#f6f4ef;--card:#fff;--fg:#1c1b19;--mute:#6b675f;--line:#e4dfd3;--gold:#a8780a;--up:#15803d;--down:#b91c1c;--warn:#b45309;--band:rgba(168,120,10,.12);--band2:rgba(168,120,10,.22)}
-@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#ece9e1;--mute:#98948a;--line:#272c35;--gold:#e0b341;--up:#4ade80;--down:#f87171;--warn:#fbbf24;--band:rgba(224,179,65,.10);--band2:rgba(224,179,65,.20)}}
+:root{--bg:#f6f4ef;--card:#fff;--fg:#1c1b19;--mute:#6b675f;--line:#e4dfd3;--gold:#a8780a;--up:#15803d;--down:#b91c1c;--flat:#6b675f;--upbg:rgba(21,128,61,.12);--downbg:rgba(185,28,28,.12)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#ece9e1;--mute:#98948a;--line:#272c35;--gold:#e0b341;--up:#4ade80;--down:#f87171;--flat:#98948a;--upbg:rgba(74,222,128,.13);--downbg:rgba(248,113,113,.13)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.55;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
-main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
-h1{font-size:15px;margin:0;color:var(--mute);font-weight:600}
-h2{font-size:15px;margin:0 0 8px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.price{font-size:38px;font-weight:700;color:var(--gold);direction:ltr;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
-.row{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--mute);font-size:13px}
-.row b{color:var(--fg);font-variant-numeric:tabular-nums}
+h2{font-size:14px;margin:0;color:var(--mute);font-weight:600}
+button{font:inherit;font-size:13px;background:var(--gold);color:#111;border:0;border-radius:8px;padding:6px 12px;font-weight:600}
+.price{font-size:44px;font-weight:700;color:var(--gold);direction:ltr;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-.5px;line-height:1.15;margin:6px 0 2px}
+.sub{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--mute);font-size:13px}
+.sub b{color:var(--fg);font-variant-numeric:tabular-nums}
 .up{color:var(--up)}.down{color:var(--down)}
-button{font:inherit;background:var(--gold);color:#111;border:0;border-radius:8px;padding:7px 12px;font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--mute)}
-.chip::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mute);margin-inline-end:6px}
-.chip.ok::before{background:var(--up)}.chip.bad::before{background:var(--down)}
-canvas{width:100%;height:240px;display:block}
-.verdict{font-size:20px;font-weight:700}
-ul{margin:6px 0 0;padding-inline-start:20px}li{margin:4px 0}
-.scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
-tr.fut td{color:var(--fg);font-weight:600}tr.past td{color:var(--mute)}
-.news li{list-style:none;margin:0;padding:8px 0;border-bottom:1px solid var(--line);padding-inline-start:0}
-.news a{color:var(--fg);text-decoration:none}
-.news small{color:var(--mute);display:block;direction:ltr;text-align:start}
-.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--mute);margin-inline-end:6px}
+.bar{display:flex;height:34px;border-radius:9px;overflow:hidden;margin:10px 0 6px;font-weight:700;font-size:15px;direction:ltr}
+.bar div{display:flex;align-items:center;justify-content:center;min-width:46px;transition:width .4s}
+.bar .s{background:var(--downbg);color:var(--down)}.bar .b{background:var(--upbg);color:var(--up)}
+.legend{display:flex;justify-content:space-between;font-size:13px;color:var(--mute)}
+.verdict{font-size:18px;font-weight:700;margin:10px 0 2px}
+.rng{font-size:14px;direction:rtl}.rng b{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:embed}
+details{margin-top:8px}summary{color:var(--mute);font-size:13px;cursor:pointer}
+ul{margin:6px 0 0;padding-inline-start:18px;font-size:13px}li{margin:3px 0}
 .note{font-size:12px;color:var(--mute)}
-.lvl{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px}
-.ev{padding:8px 0;border-bottom:1px solid var(--line)}.ev.past{opacity:.6}.evt{font-size:12px;color:var(--mute)}
+.an{padding:10px 0;border-bottom:1px solid var(--line)}.an:last-child{border:0}
+.an .h{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.an .n{font-weight:600;font-size:14px}.an .d{font-size:12px;color:var(--mute)}
+.badge{font-size:12px;font-weight:700;border-radius:999px;padding:1px 10px;white-space:nowrap}
+.badge.up{background:var(--upbg)}.badge.down{background:var(--downbg)}.badge.flat{background:var(--line);color:var(--flat)}
+.an p{margin:4px 0 0;font-size:13px}
+.cons{background:var(--line);border-radius:10px;padding:9px 11px;font-size:14px;margin:10px 0}
+svg{width:100%;height:auto;display:block}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--mute)}
+.chip::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--mute);margin-inline-end:5px}
+.chip.ok::before{background:var(--up)}.chip.bad::before{background:var(--down)}
+pre{white-space:pre-wrap;direction:ltr;text-align:left;font:11px/1.4 system-ui;color:var(--mute);margin:6px 0 0}
 </style>
 </head>
 <body>
 <main>
+
   <section class="card">
-    <div class="top"><h1>الذهب · أوقية بالدولار</h1><button id="refresh">تحديث الآن</button></div>
+    <div class="top"><h2>الذهب · أوقية بالدولار</h2><button id="refresh">تحديث</button></div>
     <div class="price" id="price">…</div>
-    <div class="row" id="stats"></div>
-    <div class="chips" id="chips"></div>
-    <div class="note" id="stamp" style="margin-top:8px"></div>
-    <pre class="note" id="errs" style="white-space:pre-wrap;direction:ltr;text-align:left;margin:6px 0 0;font-family:inherit"></pre>
+    <div class="sub" id="sub"></div>
+    <div class="note" id="stamp" style="margin-top:6px"></div>
   </section>
 
   <section class="card">
-    <h2>آخر 24 ساعة + النطاق المتوقع 12 و24 ساعة</h2>
-    <canvas id="chart"></canvas>
-    <div class="note">الخط الذهبي: السعر الفعلي. المنطقة الداكنة: نطاق 12 ساعة. الفاتحة: نطاق 24 ساعة (احتمال ~80%). الخط المتقطع: الوسط.</div>
-  </section>
-
-  <section class="card">
-    <h2>الحكم والشروط</h2>
+    <h2>الأفضلية خلال الـ12 ساعة القادمة</h2>
+    <div class="bar"><div class="s" id="bs" style="width:50%"></div><div class="b" id="bb" style="width:50%"></div></div>
+    <div class="legend"><span>بيع / هبوط</span><span>شراء / صعود</span></div>
     <div class="verdict" id="verdict">…</div>
-    <ul id="reasons"></ul>
-    <p id="invalid" style="margin:10px 0 4px"></p>
-    <div class="lvl" id="ranges"></div>
-    <p class="note" style="margin-top:10px">النطاق إحصائي مبني على تذبذب آخر 24 ساعة، مش توقع مضمون، وخبر مفاجئ ممكن يكسره. ليس نصيحة استثمارية.</p>
+    <div class="rng" id="rng"></div>
+    <div class="note" id="events" style="margin-top:6px"></div>
+    <details><summary>ليه الأرقام دي؟</summary><ul id="why"></ul>
+      <p class="note">النسبة تقدير مني مبني على مؤشرات فنية لحظية وأوزان تقديرية لعوامل الأخبار الاقتصادية والجيوسياسية، وهي مش احتمال مضمون. النطاق مبني على تذبذب آخر 24 ساعة (احتمال ~80%).</p></details>
   </section>
 
   <section class="card">
-    <h2>أحداث اقتصادية (آخر 24 ساعة والقادمة 24 ساعة) · توقيت الرياض</h2>
-    <div id="cal"></div>
+    <h2>آراء المحللين وتوصياتهم</h2>
+    <div class="cons" id="cons"></div>
+    <div id="ladder"></div>
+    <div id="analysts"></div>
+    <p class="note" id="anNote"></p>
   </section>
 
-  <section class="card">
-    <h2>أخبار الذهب والاقتصاد والجيوسياسة · آخر 24 ساعة</h2>
-    <ul class="news" id="news" style="padding:0"></ul>
-  </section>
+  <div class="note">ليس نصيحة استثمارية. التداول بالرافعة المالية عالي المخاطر.</div>
+  <div class="dots" id="chips"></div>
+  <pre id="errs"></pre>
 </main>
 
 <script>
@@ -84,18 +83,47 @@ const TZ = "Asia/Riyadh";
 const $ = s => document.querySelector(s);
 const hhmm = t => new Date(t).toLocaleTimeString("en-GB", {timeZone: TZ, hour: "2-digit", minute: "2-digit"});
 const dmhm = t => new Date(t).toLocaleString("en-GB", {timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
-const PROXIES = [
-  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
-  u => "https://corsproxy.io/?" + encodeURIComponent(u),
-  u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u),
-  u => "https://thingproxy.freeboard.io/fetch/" + u
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const fmt = (x, d = 0) => x.toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+
+/* ===== بيانات محفوظة (من مقالات منشورة، حُدّثت 24/11/2026 ~14:40 الرياض) ===== */
+const ASOF = Date.parse("2026-11-24T11:40:00Z");
+const MACRO = [
+  {w: -0.8, t: "الفيدرالي: احتمال رفع الفائدة في ديسمبر ~96%، وتصريحات متشددة من مسؤولين (والر ومسالم)"},
+  {w: -0.6, t: "الدولار قرب أعلى مستوى في 19 شهرًا وعائد السندات لـ10 سنوات ~4.9%"},
+  {w: +0.6, t: "توتر مضيق هرمز والهجمات على السفن يضيف علاوة مخاطر جيوسياسية"},
+  {w: +0.3, t: "ارتداد الأسهم خفّف بيع الذهب لتغطية الهوامش"},
+  {w: -0.3, t: "PCE الأساسي (أكتوبر): المتوقع 3.2% مقابل 3.1%، وأي قراءة أعلى تضغط على الذهب"}
+];
+const EVENTS = [
+  {t: "2026-11-24T15:00:00Z", n: "ثقة المستهلك الأمريكي (متوقع 92.1 · سابق 91.7)"},
+  {t: "2026-11-25T13:30:00Z", n: "PCE الأساسي الأمريكي (متوقع 3.2% سنويًا · سابق 3.1%)"}
+];
+const ANALYSTS = [
+  {n: "ديفيد موريسون", o: "Trade Nation", d: "23/11 · عبر Kitco", s: "up", lab: "ارتداد بحذر",
+   p: "التصحيح «ممتد» وارتداد قوي محتمل، لكن الزخم اليومي لم يؤكد انعكاسًا. مقاومة 3,651 ثم 3,695–3,700، ودعم 3,595 ثم 3,503."},
+  {n: "برنارد داهدا", o: "Natixis", d: "23/11 · عبر Kitco", s: "down", lab: "هابط (متوسط المدى)",
+   p: "الارتداد قد يكون قصيرًا، والذهب قد ينزل إلى 3,340 بحلول يناير مع تراجع طلب البنوك المركزية وتدفقات خارجة من الصناديق."},
+  {n: "تحليل فني", o: "Blockchain.News", d: "24/11 · 10:44 غرينتش", s: "flat", lab: "محايد",
+   p: "ارتداد داخل هيكل تصحيحي. محور 3,648؛ مقاومة 3,682 ثم 3,730؛ دعم 3,600 ثم 3,566. RSI عند 33 قرب التشبع البيعي."},
+  {n: "ماثيو جونز", o: "Britannia Bullion", d: "24/11 · عبر Mitrade", s: "flat", lab: "تذبذب جانبي",
+   p: "الضرر الفني كبير والتماسك الجانبي هو المرجّح. كسر 3,500 بدون تعافٍ يضعف البنية طويلة المدى."}
+];
+const LEVELS = [
+  {p: 3730, k: "r", t: "مقاومة قوية"}, {p: 3700, k: "r", t: "مقاومة"}, {p: 3682, k: "r", t: "مقاومة"},
+  {p: 3651, k: "r", t: "مقاومة"}, {p: 3648, k: "m", t: "محور"},
+  {p: 3597, k: "s", t: "دعم"}, {p: 3566, k: "s", t: "دعم"}, {p: 3503, k: "s", t: "دعم رئيسي"}
 ];
 
+/* ===== الشبكة ===== */
+const PROXIES = [
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://corsproxy.io/?" + encodeURIComponent(u)
+];
 async function getText(url, validate, noProxy) {
   const urls = noProxy ? [url] : [url, ...PROXIES.map(p => p(url))];
   const one = async u => {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 10000);
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
     try {
       const r = await fetch(u, {signal: ctl.signal, cache: "no-store"});
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -110,18 +138,23 @@ const isJson = f => t => { try { return f(JSON.parse(t)); } catch (e) { return f
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const msg = e => (e && e.errors) ? e.errors.map(x => x.message).join(" | ") : String((e && e.message) || e);
 
-/* ---------- الحالة ---------- */
-const S = {pts: [], spot: null, news: [], cal: [], status: {}, err: {}, lastOk: 0};
-try { const c = JSON.parse(localStorage.getItem("goldlive") || "null"); if (c && c.pts) { S.pts = c.pts; S.news = (c.news || []).map(n => ({...n, when: new Date(n.when)})); S.cal = (c.cal || []).map(e => ({...e, when: new Date(e.when)})); } } catch (e) {}
-function save() { try { localStorage.setItem("goldlive", JSON.stringify({pts: S.pts, news: S.news, cal: S.cal})); } catch (e) {} }
+const S = {pts: [], spot: null, newsScore: null, newsUp: 0, newsDown: 0, status: {}, err: {}, lastOk: 0};
+try { const c = JSON.parse(localStorage.getItem("goldlive2") || "null"); if (c && c.pts) S.pts = c.pts; } catch (e) {}
+function save() { try { localStorage.setItem("goldlive2", JSON.stringify({pts: S.pts})); } catch (e) {} }
 function setStatus(k, ok, err) { S.status[k] = ok; S.err[k] = ok ? "" : (err || ""); if (ok) S.lastOk = Date.now(); }
 
-/* ---------- الأسعار ---------- */
+async function fetchSpot() {
+  try {
+    const j = JSON.parse(await getText("https://api.gold-api.com/price/XAU", isJson(x => x && x.price)));
+    S.spot = {price: +j.price, t: Date.now()}; setStatus("السعر اللحظي", true);
+  } catch (e) { setStatus("السعر اللحظي", false, msg(e)); }
+}
 async function fetchSeries() {
-  const K = "سلسلة 24 ساعة";
+  const K = "السلسلة";
+  const kl = k => [Math.floor(k[0] / 1000), +k[4]];
   const srcs = [
-    async () => JSON.parse(await getText("https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(k => [Math.floor(k[0] / 1000), +k[4]]),
-    async () => JSON.parse(await getText("https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(k => [Math.floor(k[0] / 1000), +k[4]]),
+    async () => JSON.parse(await getText("https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(kl),
+    async () => JSON.parse(await getText("https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(kl),
     async () => { const res = JSON.parse(await getText("https://api.kraken.com/0/public/OHLC?pair=PAXGUSD&interval=5", isJson(x => x && x.result), true)).result; const key = Object.keys(res).find(k => k !== "last"); return res[key].map(r => [+r[0], +r[4]]); }
   ];
   try {
@@ -129,95 +162,34 @@ async function fetchSeries() {
     if (out.length > 60) { S.pts = out; setStatus(K, true); } else throw new Error("بيانات قليلة");
   } catch (e) { setStatus(K, false, msg(e)); }
 }
-async function fetchSpot() {
-  try {
-    const j = JSON.parse(await getText("https://api.gold-api.com/price/XAU", isJson(x => x && x.price)));
-    if (j && j.price) { S.spot = {price: +j.price, t: Date.now()}; setStatus("السعر الفوري XAU", true); return; }
-    throw 0;
-  } catch (e) { setStatus("السعر الفوري XAU", false); }
-}
-
-/* ---------- الأخبار ---------- */
-const QUERIES = {
-  "الذهب": "gold price",
-  "اقتصاد": "Federal Reserve OR inflation OR US dollar OR treasury yields",
-  "جيوسياسة": "war OR sanctions OR Middle East OR Ukraine OR Taiwan OR tariffs OR Hormuz"
-};
 const BULL = ["safe haven","rate cut","dovish","war","escalat","tension","sanction","weak dollar","dollar falls","dollar slips","inflation rises","record high","central bank buying","conflict","hormuz","attack"];
 const BEAR = ["rate hike","hawkish","strong dollar","dollar rises","dollar gains","yields rise","yields climb","ceasefire","peace deal","profit-taking","gold falls","gold drops","gold slips","selloff","risk-on","inflation cools","margin call"];
 const GQ = {
-  "الذهب": "\"gold price\"",
-  "اقتصاد": "(\"Federal Reserve\" OR inflation OR \"US dollar\" OR \"Treasury yields\")",
-  "جيوسياسة": "(war OR sanctions OR Hormuz OR Ukraine OR Taiwan OR tariffs)"
+  a: "\"gold price\"",
+  b: "(\"Federal Reserve\" OR inflation OR \"US dollar\" OR \"Treasury yields\")",
+  c: "(war OR sanctions OR Hormuz OR Ukraine OR Taiwan OR tariffs)"
 };
-function gdeltDate(x) { const m = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/.exec(x || ""); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : new Date(NaN); }
 async function fetchNews() {
-  const items = [], seen = new Set(), errs = [];
-  const add = (cat, title, link, when) => {
-    if (!title || seen.has(title) || isNaN(when) || Date.now() - when > 864e5) return;
-    seen.add(title);
-    const tl = title.toLowerCase();
-    const score = BULL.filter(w => tl.includes(w)).length - BEAR.filter(w => tl.includes(w)).length;
-    items.push({cat, title, link, when, score});
-  };
-  let i = 0;
-  for (const [cat, q] of Object.entries(GQ)) {
+  const seen = new Set(), errs = []; let up = 0, down = 0, n = 0, i = 0;
+  for (const q of Object.values(GQ)) {
     if (i++) await sleep(5500);
     try {
       const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(q + " sourcelang:english") + "&mode=ArtList&format=json&maxrecords=25&timespan=24h&sort=DateDesc";
       const t = await getText(url, x => { const y = x.trim(); return y === "" || y.startsWith("{"); }, true);
       let j = {}; try { j = JSON.parse(t); } catch (e) {}
-      const arts = j.articles || [];
-      arts.forEach(a => add(cat, a.title, a.url, gdeltDate(a.seendate)));
-      if (!arts.length) errs.push("GDELT(" + cat + "): 0 مقال");
-    } catch (e) { errs.push("GDELT(" + cat + "): " + msg(e)); }
-  }
-  if (!items.length) {
-    for (const [cat, q] of Object.entries(QUERIES)) {
-      const g = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
-      try {
-        const j = JSON.parse(await getText("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(g), isJson(x => x && x.items), true));
-        j.items.forEach(a => add(cat, a.title, a.link, new Date(String(a.pubDate).replace(" ", "T") + "Z")));
-      } catch (e) {
-        errs.push("RSS2JSON(" + cat + "): " + msg(e));
-        try {
-          const xml = new DOMParser().parseFromString(await getText(g, x => x.includes("<item")), "text/xml");
-          xml.querySelectorAll("item").forEach(it => add(cat, it.querySelector("title")?.textContent, it.querySelector("link")?.textContent, new Date(it.querySelector("pubDate")?.textContent || "")));
-        } catch (e2) { errs.push("GNEWS(" + cat + "): " + msg(e2)); }
-      }
-    }
-  }
-  if (items.length) { items.sort((a, b) => b.when - a.when); S.news = items.slice(0, 30); }
-  setStatus("الأخبار", items.length > 0, errs.join(" | ") || "لا أخبار");
-}
-
-/* ---------- التقويم الاقتصادي ---------- */
-const FALLBACK_CAL = [
-  {when: "2026-11-24T15:00:00Z", title: "US CB Consumer Confidence", country: "USD", impact: "High", forecast: "92.1", previous: "91.7"},
-  {when: "2026-11-25T13:30:00Z", title: "US Core PCE (YoY) Oct", country: "USD", impact: "High", forecast: "3.2%", previous: "3.1%"}
-];
-async function fetchCal() {
-  const out = [], errs = []; let ok = false;
-  for (const n of ["thisweek", "nextweek"]) {
-    try {
-      const arr = JSON.parse(await getText("https://nfs.faireconomy.media/ff_calendar_" + n + ".json", isJson(Array.isArray)));
-      ok = true;
-      arr.forEach(e => {
-        if (!["High", "Medium"].includes(e.impact) || !["USD","EUR","CNY","GBP"].includes(e.country)) return;
-        const when = new Date(e.date);
-        if (when >= Date.now() - 864e5 && when <= Date.now() + 864e5)
-          out.push({when, title: e.title, country: e.country, impact: e.impact, forecast: e.forecast || "", previous: e.previous || ""});
+      (j.articles || []).forEach(a => {
+        if (!a.title || seen.has(a.title)) return; seen.add(a.title); n++;
+        const tl = a.title.toLowerCase();
+        const sc = BULL.filter(w => tl.includes(w)).length - BEAR.filter(w => tl.includes(w)).length;
+        if (sc > 0) up++; else if (sc < 0) down++;
       });
-    } catch (e) { errs.push(n + ": " + msg(e)); }
+    } catch (e) { errs.push("GDELT: " + msg(e)); }
   }
-  if (ok) { out.sort((a, b) => a.when - b.when); S.cal = out; setStatus("التقويم الاقتصادي", true); }
-  else {
-    S.cal = FALLBACK_CAL.map(e => ({...e, when: new Date(e.when), title: e.title + " (محفوظ)"})).filter(e => e.when >= Date.now() - 864e5 && e.when <= Date.now() + 864e5);
-    setStatus("التقويم الاقتصادي", false, errs.join(" | ") + " ← عرض أحداث محفوظة");
-  }
+  if (n > 0) { S.newsScore = up - down; S.newsUp = up; S.newsDown = down; setStatus("الأخبار", true); }
+  else setStatus("الأخبار", false, errs.join(" | ") || "لا أخبار");
 }
 
-/* ---------- التحليل ---------- */
+/* ===== التحليل ===== */
 function ema(v, n) { const k = 2 / (n + 1); let e = v[0]; return v.map(x => (e = x * k + e * (1 - k))); }
 function rsi(v, n = 14) {
   if (v.length < n + 2) return 50;
@@ -228,113 +200,84 @@ function rsi(v, n = 14) {
   return al === 0 ? 100 : 100 - 100 / (1 + ag / al);
 }
 function analyze() {
-  const pts = S.pts; if (pts.length < 60) return null;
-  const closes = pts.map(p => p[1]);
-  const last = closes[closes.length - 1], lastT = pts[pts.length - 1][0];
+  const pts = S.pts; if (pts.length < 80) return null;
+  const closes = pts.map(p => p[1]), last = closes[closes.length - 1], lastT = pts[pts.length - 1][0];
+  const px = S.spot ? S.spot.price : last;
   const e20 = ema(closes, 20).at(-1), e50 = ema(closes, 50).at(-1), r = rsi(closes);
   const h24 = pts.filter(p => p[0] >= lastT - 86400);
   const step = Math.max(60, (lastT - pts[Math.max(0, pts.length - 51)][0]) / 50);
   const rets = []; for (let i = 1; i < h24.length; i++) rets.push(Math.log(h24[i][1] / h24[i-1][1]));
   const sigma = Math.sqrt(rets.reduce((s, x) => s + x*x, 0) / Math.max(1, rets.length));
-  const newsScore = S.news.reduce((s, n) => s + n.score, 0);
-  let score = 0; const reasons = [];
-  if (e20 > e50) { score++; reasons.push("المتوسط 20 فوق 50: اتجاه قصير صاعد"); } else { score--; reasons.push("المتوسط 20 تحت 50: اتجاه قصير هابط"); }
-  if (last > e50) { score++; reasons.push("السعر فوق متوسط 50"); } else { score--; reasons.push("السعر تحت متوسط 50"); }
-  if (r > 60) { score++; reasons.push("RSI " + r.toFixed(0) + ": زخم صاعد (فوق 70 تشبع شرائي)"); }
-  else if (r < 40) { score--; reasons.push("RSI " + r.toFixed(0) + ": زخم هابط (تحت 30 تشبع بيعي، احتمال ارتداد)"); }
-  else reasons.push("RSI " + r.toFixed(0) + ": محايد");
-  if (newsScore >= 3) { score++; reasons.push("الأخبار داعمة للذهب (نقاط " + newsScore + ")"); }
-  else if (newsScore <= -3) { score--; reasons.push("الأخبار ضاغطة على الذهب (نقاط " + newsScore + ")"); }
-  else reasons.push("الأخبار متوازنة (نقاط " + newsScore + ")");
-  const bias = score >= 2 ? "مائل للصعود" : score <= -2 ? "مائل للهبوط" : "تذبذب / عرضي";
-  const invalid = score > 0 ? "الانحياز يبطل لو كسر السعر " + e50.toFixed(1) + " لتحت"
-    : score < 0 ? "الانحياز يبطل لو تجاوز السعر " + e50.toFixed(1) + " لفوق"
-    : "استنى اختراق واضح فوق أو تحت " + e50.toFixed(1);
-  const drift = score * 0.15 * sigma;
-  const proj = h => { const n = h * 3600 / step; const w = 1.28 * sigma * Math.sqrt(n); return {mid: last * Math.exp(drift*n), lo: last * Math.exp(-w), hi: last * Math.exp(w)}; };
-  const first24 = h24[0][1];
-  return {last, lastT, hi: Math.max(...h24.map(p => p[1])), lo: Math.min(...h24.map(p => p[1])), chg: (last/first24 - 1) * 100,
-          e20, e50, r, score, bias, reasons, invalid, sigma, step, p12: proj(12), p24: proj(24), h24, drift};
+  const n12 = 12 * 3600 / step, w = 1.28 * sigma * Math.sqrt(n12);
+  const back = pts[Math.max(0, pts.length - 37)][1];
+  const z = Math.log(last / back) / (sigma * 6 || 1);
+  const reasons = []; let s = 0;
+  const add = (v, t) => { s += v; reasons.push({v, t}); };
+  add(e20 > e50 ? .5 : -.5, e20 > e50 ? "فنيًا: المتوسط 20 فوق 50 (اتجاه قصير صاعد)" : "فنيًا: المتوسط 20 تحت 50 (اتجاه قصير هابط)");
+  add(last > e50 ? .5 : -.5, last > e50 ? "فنيًا: السعر فوق متوسط 50" : "فنيًا: السعر تحت متوسط 50");
+  const mom = clamp(z * .3, -.5, .5);
+  add(mom, "فنيًا: حركة آخر 3 ساعات " + (mom >= 0 ? "صاعدة" : "هابطة"));
+  if (r < 30) add(.5, "RSI " + r.toFixed(0) + ": تشبع بيعي، احتمال ارتداد");
+  else if (r > 70) add(-.5, "RSI " + r.toFixed(0) + ": تشبع شرائي، احتمال تراجع");
+  else reasons.push({v: 0, t: "RSI " + r.toFixed(0) + ": محايد"});
+  if (S.newsScore !== null) { const v = clamp(S.newsScore / 8, -.7, .7); add(v, "أخبار آخر 24 ساعة: " + S.newsUp + " داعم للذهب مقابل " + S.newsDown + " ضاغط"); }
+  const stale = Date.now() - ASOF > 24 * 3600e3;
+  if (!stale) MACRO.forEach(m => add(m.w, m.t));
+  const pUp = clamp(100 / (1 + Math.exp(-0.6 * s)), 25, 75);
+  return {px, last, pUp: Math.round(pUp), lo: px * Math.exp(-w), hi: px * Math.exp(w), reasons, stale, chg: (last / h24[0][1] - 1) * 100};
 }
 
-/* ---------- الرسم ---------- */
-function draw(a) {
-  const cv = $("#chart"), dpr = window.devicePixelRatio || 1;
-  const W = cv.clientWidth, H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr;
-  const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  if (!a) { g.fillStyle = css("--mute"); g.font = "14px system-ui"; g.fillText("لا توجد بيانات كافية بعد", 12, 30); return; }
-  const t0 = a.h24[0][0], t1 = a.lastT + 86400, padL = 8, padR = 44, padT = 10, padB = 20;
-  const ymin = Math.min(a.lo, a.p24.lo) * .9985, ymax = Math.max(a.hi, a.p24.hi) * 1.0015;
-  const X = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
-  const Y = p => padT + (ymax - p) / (ymax - ymin) * (H - padT - padB);
-  g.strokeStyle = css("--line"); g.fillStyle = css("--mute"); g.font = "11px system-ui"; g.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) { const p = ymin + (ymax - ymin) * i / 4, y = Y(p); g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke(); g.fillText(p.toFixed(0), W - padR + 4, y + 4); }
-  g.font = "10px system-ui";
-  for (let k = 0; k <= 4; k++) {
-    const t = t0 + (t1 - t0) * k / 4, lab = dmhm(t * 1000), w = g.measureText(lab).width;
-    g.fillText(lab, Math.max(2, Math.min(X(t) - w / 2, W - w - 2)), H - 5);
-  }
-  g.font = "11px system-ui";
-  const band = (hrs, fill) => {
-    const N = 24; g.beginPath();
-    for (let i = 0; i <= N; i++) { const th = hrs * 3600 * i / N, n = th / a.step, p = a.last * Math.exp(a.sigma * 1.28 * Math.sqrt(n)); const x = X(a.lastT + th), y = Y(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    for (let i = N; i >= 0; i--) { const th = hrs * 3600 * i / N, n = th / a.step, p = a.last * Math.exp(-a.sigma * 1.28 * Math.sqrt(n)); g.lineTo(X(a.lastT + th), Y(p)); }
-    g.closePath(); g.fillStyle = fill; g.fill();
-  };
-  band(24, css("--band")); band(12, css("--band2"));
-  g.setLineDash([5, 4]); g.strokeStyle = css("--mute"); g.beginPath(); g.moveTo(X(a.lastT), Y(a.last)); g.lineTo(X(a.lastT + 86400), Y(a.p24.mid)); g.stroke(); g.setLineDash([]);
-  g.strokeStyle = css("--gold"); g.lineWidth = 2; g.beginPath();
-  a.h24.forEach((p, i) => { const x = X(p[0]), y = Y(p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
-  g.fillStyle = css("--gold"); g.beginPath(); g.arc(X(a.lastT), Y(a.last), 4, 0, 7); g.fill();
-  g.strokeStyle = css("--mute"); g.lineWidth = 1; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(X(a.lastT), padT); g.lineTo(X(a.lastT), H - padB); g.stroke(); g.setLineDash([]);
-  g.fillStyle = css("--mute"); g.fillText("الآن", X(a.lastT) + 4, padT + 10);
+/* ===== العرض ===== */
+function ladder(px) {
+  const lv = LEVELS.map(l => l.p), min = Math.min(...lv, px) - 20, max = Math.max(...lv, px) + 20;
+  const W = 340, H = 260, Y = p => 10 + (max - p) / (max - min) * (H - 20);
+  let g = "";
+  LEVELS.forEach(l => {
+    const y = Y(l.p), c = l.k === "r" ? "var(--down)" : l.k === "s" ? "var(--up)" : "var(--mute)";
+    g += '<line x1="52" x2="' + (W - 6) + '" y1="' + y + '" y2="' + y + '" stroke="' + c + '" stroke-width="1" stroke-dasharray="' + (l.k === "m" ? "2 3" : "0") + '" opacity=".75"/>' +
+      '<text x="48" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="' + c + '" style="font-variant-numeric:tabular-nums">' + fmt(l.p) + '</text>' +
+      '<text x="' + (W - 8) + '" y="' + (y - 3) + '" text-anchor="end" font-size="10" fill="var(--mute)">' + l.t + '</text>';
+  });
+  const y = Y(px);
+  g += '<line x1="52" x2="' + (W - 6) + '" y1="' + y + '" y2="' + y + '" stroke="var(--gold)" stroke-width="2.5"/>' +
+    '<rect x="2" y="' + (y - 9) + '" width="48" height="18" rx="5" fill="var(--gold)"/>' +
+    '<text x="26" y="' + (y + 4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#111">' + fmt(px) + '</text>';
+  $("#ladder").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="مستويات الدعم والمقاومة">' + g + '</svg>';
 }
-
-/* ---------- العرض ---------- */
 function render() {
-  const a = analyze();
-  const shown = S.spot ? S.spot.price : (a ? a.last : null);
-  $("#price").textContent = shown ? shown.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $" : "…";
-  const st = $("#stats"); st.textContent = "";
+  const a = analyze(), px = S.spot ? S.spot.price : (a ? a.last : null);
+  $("#price").textContent = px ? fmt(px, 2) + " $" : "…";
+  const sub = $("#sub"); sub.textContent = "";
+  if (a) { const c = a.chg >= 0 ? "up" : "down"; sub.innerHTML = '<span>تغيّر 24س: <b class="' + c + '">' + (a.chg >= 0 ? "+" : "") + a.chg.toFixed(2) + '%</b></span>'; }
+  $("#stamp").textContent = S.lastOk ? "آخر تحديث " + hhmm(S.lastOk) + " (الرياض) · تلقائي كل دقيقة والصفحة مفتوحة" : "جاري التحميل…";
   if (a) {
-    const cls = a.chg >= 0 ? "up" : "down";
-    st.innerHTML = '<span>24س: <b class="' + cls + '">' + (a.chg >= 0 ? "+" : "") + a.chg.toFixed(2) + '%</b></span><span>أعلى: <b>' + a.hi.toFixed(1) + '</b></span><span>أدنى: <b>' + a.lo.toFixed(1) + '</b></span><span>سلسلة PAXG: <b>' + a.last.toFixed(1) + '</b></span>';
+    $("#bs").style.width = (100 - a.pUp) + "%"; $("#bs").textContent = (100 - a.pUp) + "%";
+    $("#bb").style.width = a.pUp + "%"; $("#bb").textContent = a.pUp + "%";
+    $("#verdict").textContent = a.pUp >= 57 ? "الأفضلية للصعود" : a.pUp <= 43 ? "الأفضلية للهبوط" : "تذبذب بدون أفضلية واضحة";
+    $("#rng").innerHTML = "النطاق المتوقع: <b>" + fmt(a.lo) + "</b> ← <b>" + fmt(a.hi) + "</b>";
+    const w = $("#why"); w.textContent = "";
+    a.reasons.forEach(r => { const li = document.createElement("li"); li.textContent = (r.v > 0 ? "▲ " : r.v < 0 ? "▼ " : "• ") + r.t; w.append(li); });
+    if (a.stale) { const li = document.createElement("li"); li.textContent = "عوامل الأخبار المحفوظة قديمة (أكتر من 24 ساعة) ولم تُحتسب. اطلب مني تحديثها."; w.append(li); }
+    ladder(a.px);
   }
+  const ev = EVENTS.filter(e => Date.parse(e.t) > Date.now() - 36e5).slice(0, 2);
+  $("#events").textContent = ev.length ? "أقرب أحداث: " + ev.map(e => dmhm(Date.parse(e.t)) + " " + e.n).join(" · ") : "";
+  const up = ANALYSTS.filter(x => x.s === "up").length, dn = ANALYSTS.filter(x => x.s === "down").length, fl = ANALYSTS.length - up - dn;
+  $("#cons").textContent = "الغالب على آراء المحللين للـ12 ساعة: تذبذب بين 3,595 و3,700 قبل بيانات PCE. اختراق فوق 3,700 يفتح 3,730، وكسر 3,595 يفتح 3,503. (" + up + " صاعد بحذر · " + fl + " محايد · " + dn + " هابط)";
+  const box = $("#analysts"); box.textContent = "";
+  ANALYSTS.forEach(x => {
+    const d = document.createElement("div"), h = document.createElement("div"), l = document.createElement("div"), b = document.createElement("span"), p = document.createElement("p"), n = document.createElement("div"), m = document.createElement("div");
+    d.className = "an"; h.className = "h"; n.className = "n"; m.className = "d"; b.className = "badge " + x.s;
+    n.textContent = x.n + " · " + x.o; m.textContent = x.d; b.textContent = x.lab; p.textContent = x.p;
+    l.append(n, m); h.append(l, b); d.append(h, p); box.append(d);
+  });
+  $("#anNote").textContent = "الآراء والمستويات من مقالات منشورة (Kitco وBlockchain.News وMitrade) وحُدّثت 24/11 14:40 الرياض. مش بتتحدّث لوحدها، اطلب مني تحديثها. عناوين أخرى لم أتمكن من قراءة تفاصيلها: FX Leaders («رفض عند 3,651 قبل PCE»).";
   const ch = $("#chips"); ch.textContent = "";
-  ["السعر الفوري XAU", "سلسلة 24 ساعة", "الأخبار", "التقويم الاقتصادي"].forEach(k => { const s = document.createElement("span"); s.className = "chip " + (S.status[k] === true ? "ok" : S.status[k] === false ? "bad" : ""); s.textContent = k; ch.append(s); });
-  $("#stamp").textContent = S.lastOk ? "آخر نجاح تحديث: " + hhmm(S.lastOk) + " (الرياض) · تحديث تلقائي كل دقيقة" : "جاري التحميل…";
+  ["السعر اللحظي", "السلسلة", "الأخبار"].forEach(k => { const s = document.createElement("span"); s.className = "chip " + (S.status[k] === true ? "ok" : S.status[k] === false ? "bad" : ""); s.textContent = k; ch.append(s); });
   $("#errs").textContent = Object.entries(S.err).filter(([k, v]) => v).map(([k, v]) => k + ": " + v).join("\n");
-  draw(a);
-  if (a) {
-    $("#verdict").textContent = a.bias;
-    const ul = $("#reasons"); ul.textContent = ""; a.reasons.forEach(r => { const li = document.createElement("li"); li.textContent = r; ul.append(li); });
-    $("#invalid").innerHTML = ""; const b = document.createElement("b"); b.textContent = "شرط الإبطال: "; $("#invalid").append(b, a.invalid);
-    const f = x => x.toFixed(1);
-    $("#ranges").innerHTML = "<div><b>12 ساعة</b><br>" + f(a.p12.lo) + " ← " + f(a.p12.hi) + "<br><span class='note'>وسط " + f(a.p12.mid) + "</span></div><div><b>24 ساعة</b><br>" + f(a.p24.lo) + " ← " + f(a.p24.hi) + "<br><span class='note'>وسط " + f(a.p24.mid) + "</span></div>";
-  }
-  const t = $("#cal"); t.textContent = "";
-  if (!S.cal.length) { const d = document.createElement("div"); d.className = "note"; d.textContent = "لا أحداث مهمة في هذه الفترة"; t.append(d); }
-  S.cal.forEach(e => {
-    const d = document.createElement("div"), a1 = document.createElement("div"), b1 = document.createElement("div"), c1 = document.createElement("div");
-    d.className = "ev " + (e.when > Date.now() ? "fut" : "past");
-    a1.className = "evt"; a1.textContent = (e.when > Date.now() ? "قادم" : "صدر") + " · " + dmhm(e.when) + " · " + e.country + " · " + (e.impact === "High" ? "أثر عالي" : "أثر متوسط");
-    b1.textContent = e.title;
-    c1.className = "note"; c1.textContent = "متوقع: " + (e.forecast || "—") + " · سابق: " + (e.previous || "—");
-    d.append(a1, b1, c1); t.append(d);
-  });
-  const nl = $("#news"); nl.textContent = "";
-  if (!S.news.length) { const li = document.createElement("li"); li.textContent = "لا أخبار حالياً"; nl.append(li); }
-  S.news.forEach(n => {
-    const li = document.createElement("li"), tag = document.createElement("span"), a2 = document.createElement("a"), sm = document.createElement("small");
-    tag.className = "tag"; tag.textContent = n.cat; a2.textContent = n.title; a2.target = "_blank"; a2.rel = "noopener";
-    if (/^https:\/\//.test(n.link)) a2.href = n.link;
-    sm.textContent = hhmm(n.when) + "  " + (n.score > 0 ? "▲ داعم" : n.score < 0 ? "▼ ضاغط" : "•");
-    li.append(tag, a2, sm); nl.append(li);
-  });
 }
 
-/* ---------- الدورة ---------- */
+/* ===== الدورة ===== */
 let tick = 0, busy = false;
 async function cycle(force) {
   if (busy) return; busy = true;
@@ -342,15 +285,13 @@ async function cycle(force) {
     const run = p => p.catch(() => {}).then(render);
     const jobs = [run(fetchSpot())];
     if (force || tick % 5 === 0 || !S.pts.length) jobs.push(run(fetchSeries()));
-    if (force || tick % 5 === 0 || !S.news.length) jobs.push(run(fetchNews()));
-    if (force || tick % 30 === 0 || !S.cal.length) jobs.push(run(fetchCal()));
+    if (force || tick % 5 === 0 || S.newsScore === null) jobs.push(run(fetchNews()));
     await Promise.all(jobs);
     tick++; save();
   } finally { busy = false; render(); }
 }
 $("#refresh").onclick = () => cycle(true);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) cycle(true); });
-window.addEventListener("resize", () => draw(analyze()));
 render(); cycle(true);
 setInterval(() => { if (!document.hidden) cycle(false); }, 60000);
 </script>
