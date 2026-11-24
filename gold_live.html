@@ -48,6 +48,7 @@ tr.fut td{color:var(--fg);font-weight:600}tr.past td{color:var(--mute)}
     <div class="row" id="stats"></div>
     <div class="chips" id="chips"></div>
     <div class="note" id="stamp" style="margin-top:8px"></div>
+    <pre class="note" id="errs" style="white-space:pre-wrap;direction:ltr;text-align:left;margin:6px 0 0;font-family:inherit"></pre>
   </section>
 
   <section class="card">
@@ -84,11 +85,13 @@ const hhmm = t => new Date(t).toLocaleTimeString("en-GB", {timeZone: TZ, hour: "
 const dmhm = t => new Date(t).toLocaleString("en-GB", {timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
 const PROXIES = [
   u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
-  u => "https://corsproxy.io/?" + encodeURIComponent(u)
+  u => "https://corsproxy.io/?" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u),
+  u => "https://thingproxy.freeboard.io/fetch/" + u
 ];
 
-async function getText(url, validate) {
-  const urls = [url, ...PROXIES.map(p => p(url))];
+async function getText(url, validate, noProxy) {
+  const urls = noProxy ? [url] : [url, ...PROXIES.map(p => p(url))];
   const one = async u => {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 10000);
@@ -103,23 +106,27 @@ async function getText(url, validate) {
   return Promise.any(urls.map(one));
 }
 const isJson = f => t => { try { return f(JSON.parse(t)); } catch (e) { return false; } };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const msg = e => (e && e.errors) ? e.errors.map(x => x.message).join(" | ") : String((e && e.message) || e);
 
 /* ---------- الحالة ---------- */
-const S = {pts: [], spot: null, news: [], cal: [], status: {}, lastOk: 0};
+const S = {pts: [], spot: null, news: [], cal: [], status: {}, err: {}, lastOk: 0};
 try { const c = JSON.parse(localStorage.getItem("goldlive") || "null"); if (c && c.pts) { S.pts = c.pts; S.news = (c.news || []).map(n => ({...n, when: new Date(n.when)})); S.cal = (c.cal || []).map(e => ({...e, when: new Date(e.when)})); } } catch (e) {}
 function save() { try { localStorage.setItem("goldlive", JSON.stringify({pts: S.pts, news: S.news, cal: S.cal})); } catch (e) {} }
-function setStatus(k, ok) { S.status[k] = ok; if (ok) S.lastOk = Date.now(); }
+function setStatus(k, ok, err) { S.status[k] = ok; S.err[k] = ok ? "" : (err || ""); if (ok) S.lastOk = Date.now(); }
 
 /* ---------- الأسعار ---------- */
 async function fetchSeries() {
+  const K = "سلسلة 24 ساعة";
+  const srcs = [
+    async () => JSON.parse(await getText("https://data-api.binance.vision/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(k => [Math.floor(k[0] / 1000), +k[4]]),
+    async () => JSON.parse(await getText("https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=5m&limit=576", isJson(Array.isArray), true)).map(k => [Math.floor(k[0] / 1000), +k[4]]),
+    async () => { const res = JSON.parse(await getText("https://api.kraken.com/0/public/OHLC?pair=PAXGUSD&interval=5", isJson(x => x && x.result), true)).result; const key = Object.keys(res).find(k => k !== "last"); return res[key].map(r => [+r[0], +r[4]]); }
+  ];
   try {
-    const url = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=5m&range=2d";
-    const j = JSON.parse(await getText(url, isJson(x => x.chart && x.chart.result && x.chart.result[0])));
-    const r = j.chart.result[0];
-    const out = [];
-    r.timestamp.forEach((t, i) => { const c = r.indicators.quote[0].close[i]; if (c) out.push([t, c]); });
-    if (out.length > 30) { S.pts = out; setStatus("سعر الفيوتشر GC=F", true); } else throw 0;
-  } catch (e) { setStatus("سعر الفيوتشر GC=F", false); }
+    const out = await Promise.any(srcs.map(f => f()));
+    if (out.length > 60) { S.pts = out; setStatus(K, true); } else throw new Error("بيانات قليلة");
+  } catch (e) { setStatus(K, false, msg(e)); }
 }
 async function fetchSpot() {
   try {
@@ -137,35 +144,55 @@ const QUERIES = {
 };
 const BULL = ["safe haven","rate cut","dovish","war","escalat","tension","sanction","weak dollar","dollar falls","dollar slips","inflation rises","record high","central bank buying","conflict","hormuz","attack"];
 const BEAR = ["rate hike","hawkish","strong dollar","dollar rises","dollar gains","yields rise","yields climb","ceasefire","peace deal","profit-taking","gold falls","gold drops","gold slips","selloff","risk-on","inflation cools","margin call"];
+const GQ = {
+  "الذهب": "\"gold price\"",
+  "اقتصاد": "(\"Federal Reserve\" OR inflation OR \"US dollar\" OR \"Treasury yields\")",
+  "جيوسياسة": "(war OR sanctions OR Hormuz OR Ukraine OR Taiwan OR tariffs)"
+};
+function gdeltDate(x) { const m = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/.exec(x || ""); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : new Date(NaN); }
 async function fetchNews() {
-  const items = [], seen = new Set(); let ok = false;
-  for (const [cat, q] of Object.entries(QUERIES)) {
+  const items = [], seen = new Set(), errs = []; let ok = false;
+  const add = (cat, title, link, when) => {
+    if (!title || seen.has(title) || isNaN(when) || Date.now() - when > 864e5) return;
+    seen.add(title);
+    const tl = title.toLowerCase();
+    const score = BULL.filter(w => tl.includes(w)).length - BEAR.filter(w => tl.includes(w)).length;
+    items.push({cat, title, link, when, score});
+  };
+  let i = 0;
+  for (const [cat, q] of Object.entries(GQ)) {
+    if (i++) await sleep(5500);
     try {
-      const url = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
-      const xml = new DOMParser().parseFromString(await getText(url, t => t.includes("<item")), "text/xml");
-      xml.querySelectorAll("item").forEach(it => {
-        const title = it.querySelector("title")?.textContent || "";
-        if (!title || seen.has(title)) return; seen.add(title);
-        const when = new Date(it.querySelector("pubDate")?.textContent || "");
-        if (isNaN(when) || Date.now() - when > 864e5) return;
-        const tl = title.toLowerCase();
-        const score = BULL.filter(w => tl.includes(w)).length - BEAR.filter(w => tl.includes(w)).length;
-        const link = it.querySelector("link")?.textContent || "";
-        items.push({cat, title, link, when, score});
-      });
+      const url = "https://api.gdeltproject.org/api/v2/doc/doc?query=" + encodeURIComponent(q + " sourcelang:english") + "&mode=artlist&format=json&maxrecords=25&timespan=24h&sort=datedesc";
+      const j = JSON.parse(await getText(url, isJson(x => x && typeof x === "object"), true));
+      (j.articles || []).forEach(a => add(cat, a.title, a.url, gdeltDate(a.seendate)));
       ok = true;
-    } catch (e) {}
+    } catch (e) { errs.push("GDELT " + msg(e)); }
+  }
+  if (!items.length) {
+    for (const [cat, q] of Object.entries(QUERIES)) {
+      try {
+        const g = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
+        const j = JSON.parse(await getText("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(g), isJson(x => x && x.items), true));
+        j.items.forEach(a => add(cat, a.title, a.link, new Date(String(a.pubDate).replace(" ", "T") + "Z")));
+        ok = true;
+      } catch (e) { errs.push("RSS " + msg(e)); }
+    }
   }
   if (items.length) { items.sort((a, b) => b.when - a.when); S.news = items.slice(0, 30); }
-  setStatus("الأخبار", ok);
+  setStatus("الأخبار", ok && items.length > 0, ok ? "لا أخبار في آخر 24 ساعة" : errs.join(" | "));
 }
 
 /* ---------- التقويم الاقتصادي ---------- */
+const FALLBACK_CAL = [
+  {when: "2026-11-24T15:00:00Z", title: "US CB Consumer Confidence", country: "USD", impact: "High", forecast: "92.1", previous: "91.7"},
+  {when: "2026-11-25T13:30:00Z", title: "US Core PCE (YoY) Oct", country: "USD", impact: "High", forecast: "3.2%", previous: "3.1%"}
+];
 async function fetchCal() {
-  const out = []; let ok = false;
+  const out = [], errs = []; let ok = false;
   for (const n of ["thisweek", "nextweek"]) {
     try {
-      const arr = JSON.parse(await getText("https://nfs.faireconomy.media/ff_calendar_" + n + ".json", isJson(x => Array.isArray(x))));
+      const arr = JSON.parse(await getText("https://nfs.faireconomy.media/ff_calendar_" + n + ".json", isJson(Array.isArray)));
       ok = true;
       arr.forEach(e => {
         if (!["High", "Medium"].includes(e.impact) || !["USD","EUR","CNY","GBP"].includes(e.country)) return;
@@ -173,10 +200,13 @@ async function fetchCal() {
         if (when >= Date.now() - 864e5 && when <= Date.now() + 864e5)
           out.push({when, title: e.title, country: e.country, impact: e.impact, forecast: e.forecast || "", previous: e.previous || ""});
       });
-    } catch (e) {}
+    } catch (e) { errs.push(n + ": " + msg(e)); }
   }
-  if (ok) { out.sort((a, b) => a.when - b.when); S.cal = out; }
-  setStatus("التقويم الاقتصادي", ok);
+  if (ok) { out.sort((a, b) => a.when - b.when); S.cal = out; setStatus("التقويم الاقتصادي", true); }
+  else {
+    S.cal = FALLBACK_CAL.map(e => ({...e, when: new Date(e.when), title: e.title + " (محفوظ)"})).filter(e => e.when >= Date.now() - 864e5 && e.when <= Date.now() + 864e5);
+    setStatus("التقويم الاقتصادي", false, errs.join(" | ") + " ← عرض أحداث محفوظة");
+  }
 }
 
 /* ---------- التحليل ---------- */
@@ -255,11 +285,12 @@ function render() {
   const st = $("#stats"); st.textContent = "";
   if (a) {
     const cls = a.chg >= 0 ? "up" : "down";
-    st.innerHTML = '<span>24س: <b class="' + cls + '">' + (a.chg >= 0 ? "+" : "") + a.chg.toFixed(2) + '%</b></span><span>أعلى: <b>' + a.hi.toFixed(1) + '</b></span><span>أدنى: <b>' + a.lo.toFixed(1) + '</b></span><span>فيوتشر GC=F: <b>' + a.last.toFixed(1) + '</b></span>';
+    st.innerHTML = '<span>24س: <b class="' + cls + '">' + (a.chg >= 0 ? "+" : "") + a.chg.toFixed(2) + '%</b></span><span>أعلى: <b>' + a.hi.toFixed(1) + '</b></span><span>أدنى: <b>' + a.lo.toFixed(1) + '</b></span><span>سلسلة PAXG: <b>' + a.last.toFixed(1) + '</b></span>';
   }
   const ch = $("#chips"); ch.textContent = "";
-  ["السعر الفوري XAU", "سعر الفيوتشر GC=F", "الأخبار", "التقويم الاقتصادي"].forEach(k => { const s = document.createElement("span"); s.className = "chip " + (S.status[k] === true ? "ok" : S.status[k] === false ? "bad" : ""); s.textContent = k; ch.append(s); });
+  ["السعر الفوري XAU", "سلسلة 24 ساعة", "الأخبار", "التقويم الاقتصادي"].forEach(k => { const s = document.createElement("span"); s.className = "chip " + (S.status[k] === true ? "ok" : S.status[k] === false ? "bad" : ""); s.textContent = k; ch.append(s); });
   $("#stamp").textContent = S.lastOk ? "آخر نجاح تحديث: " + hhmm(S.lastOk) + " (الرياض) · تحديث تلقائي كل دقيقة" : "جاري التحميل…";
+  $("#errs").textContent = Object.entries(S.err).filter(([k, v]) => v).map(([k, v]) => k + ": " + v).join("\n");
   draw(a);
   if (a) {
     $("#verdict").textContent = a.bias;
