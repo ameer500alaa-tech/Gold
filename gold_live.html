@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>مراقب الذهب</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--fg:#1c1b19;--mute:#6b675f;--line:#e4dfd3;--gold:#a8780a;--up:#15803d;--down:#b91c1c;--warn:#b45309;--band:rgba(168,120,10,.12);--band2:rgba(168,120,10,.22)}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#ece9e1;--mute:#98948a;--line:#272c35;--gold:#e0b341;--up:#4ade80;--down:#f87171;--warn:#fbbf24;--band:rgba(224,179,65,.10);--band2:rgba(224,179,65,.20)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.55;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+h1{font-size:15px;margin:0;color:var(--mute);font-weight:600}
+h2{font-size:15px;margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.price{font-size:38px;font-weight:700;color:var(--gold);direction:ltr;text-align:right;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.row{display:flex;flex-wrap:wrap;gap:6px 14px;color:var(--mute);font-size:13px}
+.row b{color:var(--fg);font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.down{color:var(--down)}
+button{font:inherit;background:var(--gold);color:#111;border:0;border-radius:8px;padding:7px 12px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--mute)}
+.chip::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mute);margin-inline-end:6px}
+.chip.ok::before{background:var(--up)}.chip.bad::before{background:var(--down)}
+canvas{width:100%;height:240px;display:block}
+.verdict{font-size:20px;font-weight:700}
+ul{margin:6px 0 0;padding-inline-start:20px}li{margin:4px 0}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+tr.fut td{color:var(--fg);font-weight:600}tr.past td{color:var(--mute)}
+.news li{list-style:none;margin:0;padding:8px 0;border-bottom:1px solid var(--line);padding-inline-start:0}
+.news a{color:var(--fg);text-decoration:none}
+.news small{color:var(--mute);display:block;direction:ltr;text-align:start}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--mute);margin-inline-end:6px}
+.note{font-size:12px;color:var(--mute)}
+.lvl{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <div class="top"><h1>الذهب · أوقية بالدولار</h1><button id="refresh">تحديث الآن</button></div>
+    <div class="price" id="price">…</div>
+    <div class="row" id="stats"></div>
+    <div class="chips" id="chips"></div>
+    <div class="note" id="stamp" style="margin-top:8px"></div>
+  </section>
+
+  <section class="card">
+    <h2>آخر 24 ساعة + النطاق المتوقع 12 و24 ساعة</h2>
+    <canvas id="chart"></canvas>
+    <div class="note">الخط الذهبي: السعر الفعلي. المنطقة الداكنة: نطاق 12 ساعة. الفاتحة: نطاق 24 ساعة (احتمال ~80%). الخط المتقطع: الوسط.</div>
+  </section>
+
+  <section class="card">
+    <h2>الحكم والشروط</h2>
+    <div class="verdict" id="verdict">…</div>
+    <ul id="reasons"></ul>
+    <p id="invalid" style="margin:10px 0 4px"></p>
+    <div class="lvl" id="ranges"></div>
+    <p class="note" style="margin-top:10px">النطاق إحصائي مبني على تذبذب آخر 24 ساعة، مش توقع مضمون، وخبر مفاجئ ممكن يكسره. ليس نصيحة استثمارية.</p>
+  </section>
+
+  <section class="card">
+    <h2>أحداث اقتصادية (آخر 24 ساعة والقادمة 24 ساعة) · توقيت الرياض</h2>
+    <div class="scroll"><table id="cal"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>أخبار الذهب والاقتصاد والجيوسياسة · آخر 24 ساعة</h2>
+    <ul class="news" id="news" style="padding:0"></ul>
+  </section>
+</main>
+
+<script>
+"use strict";
+const TZ = "Asia/Riyadh";
+const $ = s => document.querySelector(s);
+const hhmm = t => new Date(t).toLocaleTimeString("en-GB", {timeZone: TZ, hour: "2-digit", minute: "2-digit"});
+const dmhm = t => new Date(t).toLocaleString("en-GB", {timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+const PROXIES = [
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://corsproxy.io/?" + encodeURIComponent(u)
+];
+
+async function getText(url, validate) {
+  const urls = [url, ...PROXIES.map(p => p(url))];
+  const one = async u => {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
+    try {
+      const r = await fetch(u, {signal: ctl.signal, cache: "no-store"});
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const t = await r.text();
+      if (validate && !validate(t)) throw new Error("bad body");
+      return t;
+    } finally { clearTimeout(timer); }
+  };
+  return Promise.any(urls.map(one));
+}
+const isJson = f => t => { try { return f(JSON.parse(t)); } catch (e) { return false; } };
+
+/* ---------- الحالة ---------- */
+const S = {pts: [], spot: null, news: [], cal: [], status: {}, lastOk: 0};
+try { const c = JSON.parse(localStorage.getItem("goldlive") || "null"); if (c && c.pts) { S.pts = c.pts; S.news = (c.news || []).map(n => ({...n, when: new Date(n.when)})); S.cal = (c.cal || []).map(e => ({...e, when: new Date(e.when)})); } } catch (e) {}
+function save() { try { localStorage.setItem("goldlive", JSON.stringify({pts: S.pts, news: S.news, cal: S.cal})); } catch (e) {} }
+function setStatus(k, ok) { S.status[k] = ok; if (ok) S.lastOk = Date.now(); }
+
+/* ---------- الأسعار ---------- */
+async function fetchSeries() {
+  try {
+    const url = "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=5m&range=2d";
+    const j = JSON.parse(await getText(url, isJson(x => x.chart && x.chart.result && x.chart.result[0])));
+    const r = j.chart.result[0];
+    const out = [];
+    r.timestamp.forEach((t, i) => { const c = r.indicators.quote[0].close[i]; if (c) out.push([t, c]); });
+    if (out.length > 30) { S.pts = out; setStatus("سعر الفيوتشر GC=F", true); } else throw 0;
+  } catch (e) { setStatus("سعر الفيوتشر GC=F", false); }
+}
+async function fetchSpot() {
+  try {
+    const j = JSON.parse(await getText("https://api.gold-api.com/price/XAU", isJson(x => x && x.price)));
+    if (j && j.price) { S.spot = {price: +j.price, t: Date.now()}; setStatus("السعر الفوري XAU", true); return; }
+    throw 0;
+  } catch (e) { setStatus("السعر الفوري XAU", false); }
+}
+
+/* ---------- الأخبار ---------- */
+const QUERIES = {
+  "الذهب": "gold price",
+  "اقتصاد": "Federal Reserve OR inflation OR US dollar OR treasury yields",
+  "جيوسياسة": "war OR sanctions OR Middle East OR Ukraine OR Taiwan OR tariffs OR Hormuz"
+};
+const BULL = ["safe haven","rate cut","dovish","war","escalat","tension","sanction","weak dollar","dollar falls","dollar slips","inflation rises","record high","central bank buying","conflict","hormuz","attack"];
+const BEAR = ["rate hike","hawkish","strong dollar","dollar rises","dollar gains","yields rise","yields climb","ceasefire","peace deal","profit-taking","gold falls","gold drops","gold slips","selloff","risk-on","inflation cools","margin call"];
+async function fetchNews() {
+  const items = [], seen = new Set(); let ok = false;
+  for (const [cat, q] of Object.entries(QUERIES)) {
+    try {
+      const url = "https://news.google.com/rss/search?q=" + encodeURIComponent(q + " when:1d") + "&hl=en-US&gl=US&ceid=US:en";
+      const xml = new DOMParser().parseFromString(await getText(url, t => t.includes("<item")), "text/xml");
+      xml.querySelectorAll("item").forEach(it => {
+        const title = it.querySelector("title")?.textContent || "";
+        if (!title || seen.has(title)) return; seen.add(title);
+        const when = new Date(it.querySelector("pubDate")?.textContent || "");
+        if (isNaN(when) || Date.now() - when > 864e5) return;
+        const tl = title.toLowerCase();
+        const score = BULL.filter(w => tl.includes(w)).length - BEAR.filter(w => tl.includes(w)).length;
+        const link = it.querySelector("link")?.textContent || "";
+        items.push({cat, title, link, when, score});
+      });
+      ok = true;
+    } catch (e) {}
+  }
+  if (items.length) { items.sort((a, b) => b.when - a.when); S.news = items.slice(0, 30); }
+  setStatus("الأخبار", ok);
+}
+
+/* ---------- التقويم الاقتصادي ---------- */
+async function fetchCal() {
+  const out = []; let ok = false;
+  for (const n of ["thisweek", "nextweek"]) {
+    try {
+      const arr = JSON.parse(await getText("https://nfs.faireconomy.media/ff_calendar_" + n + ".json", isJson(x => Array.isArray(x))));
+      ok = true;
+      arr.forEach(e => {
+        if (!["High", "Medium"].includes(e.impact) || !["USD","EUR","CNY","GBP"].includes(e.country)) return;
+        const when = new Date(e.date);
+        if (when >= Date.now() - 864e5 && when <= Date.now() + 864e5)
+          out.push({when, title: e.title, country: e.country, impact: e.impact, forecast: e.forecast || "", previous: e.previous || ""});
+      });
+    } catch (e) {}
+  }
+  if (ok) { out.sort((a, b) => a.when - b.when); S.cal = out; }
+  setStatus("التقويم الاقتصادي", ok);
+}
+
+/* ---------- التحليل ---------- */
+function ema(v, n) { const k = 2 / (n + 1); let e = v[0]; return v.map(x => (e = x * k + e * (1 - k))); }
+function rsi(v, n = 14) {
+  if (v.length < n + 2) return 50;
+  let g = 0, l = 0;
+  for (let i = 1; i <= n; i++) { const d = v[i] - v[i-1]; g += Math.max(d, 0); l += Math.max(-d, 0); }
+  let ag = g / n, al = l / n;
+  for (let i = n + 1; i < v.length; i++) { const d = v[i] - v[i-1]; ag = (ag*(n-1) + Math.max(d,0)) / n; al = (al*(n-1) + Math.max(-d,0)) / n; }
+  return al === 0 ? 100 : 100 - 100 / (1 + ag / al);
+}
+function analyze() {
+  const pts = S.pts; if (pts.length < 60) return null;
+  const closes = pts.map(p => p[1]);
+  const last = closes[closes.length - 1], lastT = pts[pts.length - 1][0];
+  const e20 = ema(closes, 20).at(-1), e50 = ema(closes, 50).at(-1), r = rsi(closes);
+  const h24 = pts.filter(p => p[0] >= lastT - 86400);
+  const step = Math.max(60, (lastT - pts[Math.max(0, pts.length - 51)][0]) / 50);
+  const rets = []; for (let i = 1; i < h24.length; i++) rets.push(Math.log(h24[i][1] / h24[i-1][1]));
+  const sigma = Math.sqrt(rets.reduce((s, x) => s + x*x, 0) / Math.max(1, rets.length));
+  const newsScore = S.news.reduce((s, n) => s + n.score, 0);
+  let score = 0; const reasons = [];
+  if (e20 > e50) { score++; reasons.push("المتوسط 20 فوق 50: اتجاه قصير صاعد"); } else { score--; reasons.push("المتوسط 20 تحت 50: اتجاه قصير هابط"); }
+  if (last > e50) { score++; reasons.push("السعر فوق متوسط 50"); } else { score--; reasons.push("السعر تحت متوسط 50"); }
+  if (r > 60) { score++; reasons.push("RSI " + r.toFixed(0) + ": زخم صاعد (فوق 70 تشبع شرائي)"); }
+  else if (r < 40) { score--; reasons.push("RSI " + r.toFixed(0) + ": زخم هابط (تحت 30 تشبع بيعي، احتمال ارتداد)"); }
+  else reasons.push("RSI " + r.toFixed(0) + ": محايد");
+  if (newsScore >= 3) { score++; reasons.push("الأخبار داعمة للذهب (نقاط " + newsScore + ")"); }
+  else if (newsScore <= -3) { score--; reasons.push("الأخبار ضاغطة على الذهب (نقاط " + newsScore + ")"); }
+  else reasons.push("الأخبار متوازنة (نقاط " + newsScore + ")");
+  const bias = score >= 2 ? "مائل للصعود" : score <= -2 ? "مائل للهبوط" : "تذبذب / عرضي";
+  const invalid = score > 0 ? "الانحياز يبطل لو كسر السعر " + e50.toFixed(1) + " لتحت"
+    : score < 0 ? "الانحياز يبطل لو تجاوز السعر " + e50.toFixed(1) + " لفوق"
+    : "استنى اختراق واضح فوق أو تحت " + e50.toFixed(1);
+  const drift = score * 0.15 * sigma;
+  const proj = h => { const n = h * 3600 / step; const w = 1.28 * sigma * Math.sqrt(n); return {mid: last * Math.exp(drift*n), lo: last * Math.exp(-w), hi: last * Math.exp(w)}; };
+  const first24 = h24[0][1];
+  return {last, lastT, hi: Math.max(...h24.map(p => p[1])), lo: Math.min(...h24.map(p => p[1])), chg: (last/first24 - 1) * 100,
+          e20, e50, r, score, bias, reasons, invalid, sigma, step, p12: proj(12), p24: proj(24), h24, drift};
+}
+
+/* ---------- الرسم ---------- */
+function draw(a) {
+  const cv = $("#chart"), dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth, H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, W, H);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  if (!a) { g.fillStyle = css("--mute"); g.font = "14px system-ui"; g.fillText("لا توجد بيانات كافية بعد", 12, 30); return; }
+  const t0 = a.h24[0][0], t1 = a.lastT + 86400, padL = 8, padR = 44, padT = 10, padB = 20;
+  const ymin = Math.min(a.lo, a.p24.lo) * .9985, ymax = Math.max(a.hi, a.p24.hi) * 1.0015;
+  const X = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  const Y = p => padT + (ymax - p) / (ymax - ymin) * (H - padT - padB);
+  g.strokeStyle = css("--line"); g.fillStyle = css("--mute"); g.font = "11px system-ui"; g.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const p = ymin + (ymax - ymin) * i / 4, y = Y(p); g.beginPath(); g.moveTo(padL, y); g.lineTo(W - padR, y); g.stroke(); g.fillText(p.toFixed(0), W - padR + 4, y + 4); }
+  for (let k = 0; k <= 4; k++) { const t = t0 + (t1 - t0) * k / 4; g.fillText(hhmm(t * 1000), Math.min(X(t) - 12, W - padR - 28), H - 5); }
+  const band = (hrs, fill) => {
+    const N = 24; g.beginPath();
+    for (let i = 0; i <= N; i++) { const th = hrs * 3600 * i / N, n = th / a.step, p = a.last * Math.exp(a.sigma * 1.28 * Math.sqrt(n)); const x = X(a.lastT + th), y = Y(p); i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    for (let i = N; i >= 0; i--) { const th = hrs * 3600 * i / N, n = th / a.step, p = a.last * Math.exp(-a.sigma * 1.28 * Math.sqrt(n)); g.lineTo(X(a.lastT + th), Y(p)); }
+    g.closePath(); g.fillStyle = fill; g.fill();
+  };
+  band(24, css("--band")); band(12, css("--band2"));
+  g.setLineDash([5, 4]); g.strokeStyle = css("--mute"); g.beginPath(); g.moveTo(X(a.lastT), Y(a.last)); g.lineTo(X(a.lastT + 86400), Y(a.p24.mid)); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = css("--gold"); g.lineWidth = 2; g.beginPath();
+  a.h24.forEach((p, i) => { const x = X(p[0]), y = Y(p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  g.fillStyle = css("--gold"); g.beginPath(); g.arc(X(a.lastT), Y(a.last), 4, 0, 7); g.fill();
+  g.strokeStyle = css("--mute"); g.lineWidth = 1; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(X(a.lastT), padT); g.lineTo(X(a.lastT), H - padB); g.stroke(); g.setLineDash([]);
+}
+
+/* ---------- العرض ---------- */
+function render() {
+  const a = analyze();
+  const shown = S.spot ? S.spot.price : (a ? a.last : null);
+  $("#price").textContent = shown ? shown.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $" : "…";
+  const st = $("#stats"); st.textContent = "";
+  if (a) {
+    const cls = a.chg >= 0 ? "up" : "down";
+    st.innerHTML = '<span>24س: <b class="' + cls + '">' + (a.chg >= 0 ? "+" : "") + a.chg.toFixed(2) + '%</b></span><span>أعلى: <b>' + a.hi.toFixed(1) + '</b></span><span>أدنى: <b>' + a.lo.toFixed(1) + '</b></span><span>فيوتشر GC=F: <b>' + a.last.toFixed(1) + '</b></span>';
+  }
+  const ch = $("#chips"); ch.textContent = "";
+  ["السعر الفوري XAU", "سعر الفيوتشر GC=F", "الأخبار", "التقويم الاقتصادي"].forEach(k => { const s = document.createElement("span"); s.className = "chip " + (S.status[k] === true ? "ok" : S.status[k] === false ? "bad" : ""); s.textContent = k; ch.append(s); });
+  $("#stamp").textContent = S.lastOk ? "آخر نجاح تحديث: " + hhmm(S.lastOk) + " (الرياض) · تحديث تلقائي كل دقيقة" : "جاري التحميل…";
+  draw(a);
+  if (a) {
+    $("#verdict").textContent = a.bias;
+    const ul = $("#reasons"); ul.textContent = ""; a.reasons.forEach(r => { const li = document.createElement("li"); li.textContent = r; ul.append(li); });
+    $("#invalid").innerHTML = ""; const b = document.createElement("b"); b.textContent = "شرط الإبطال: "; $("#invalid").append(b, a.invalid);
+    const f = x => x.toFixed(1);
+    $("#ranges").innerHTML = "<div><b>12 ساعة</b><br>" + f(a.p12.lo) + " ← " + f(a.p12.hi) + "<br><span class='note'>وسط " + f(a.p12.mid) + "</span></div><div><b>24 ساعة</b><br>" + f(a.p24.lo) + " ← " + f(a.p24.hi) + "<br><span class='note'>وسط " + f(a.p24.mid) + "</span></div>";
+  }
+  const t = $("#cal"); t.textContent = "";
+  const head = document.createElement("tr"); ["الوقت", "العملة", "الحدث", "الأثر", "متوقع", "سابق"].forEach(h => { const th = document.createElement("th"); th.textContent = h; head.append(th); }); t.append(head);
+  if (!S.cal.length) { const tr = document.createElement("tr"), td = document.createElement("td"); td.colSpan = 6; td.textContent = "لا أحداث مهمة في هذه الفترة"; tr.append(td); t.append(tr); }
+  S.cal.forEach(e => { const tr = document.createElement("tr"); tr.className = e.when > Date.now() ? "fut" : "past";
+    [dmhm(e.when), e.country, e.title, e.impact === "High" ? "عالي" : "متوسط", e.forecast, e.previous].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.append(td); }); t.append(tr); });
+  const nl = $("#news"); nl.textContent = "";
+  if (!S.news.length) { const li = document.createElement("li"); li.textContent = "لا أخبار حالياً"; nl.append(li); }
+  S.news.forEach(n => {
+    const li = document.createElement("li"), tag = document.createElement("span"), a2 = document.createElement("a"), sm = document.createElement("small");
+    tag.className = "tag"; tag.textContent = n.cat; a2.textContent = n.title; a2.target = "_blank"; a2.rel = "noopener";
+    if (/^https:\/\//.test(n.link)) a2.href = n.link;
+    sm.textContent = hhmm(n.when) + "  " + (n.score > 0 ? "▲ داعم" : n.score < 0 ? "▼ ضاغط" : "•");
+    li.append(tag, a2, sm); nl.append(li);
+  });
+}
+
+/* ---------- الدورة ---------- */
+let tick = 0, busy = false;
+async function cycle(force) {
+  if (busy) return; busy = true;
+  try {
+    const run = p => p.catch(() => {}).then(render);
+    const jobs = [run(fetchSpot())];
+    if (force || tick % 5 === 0 || !S.pts.length) jobs.push(run(fetchSeries()));
+    if (force || tick % 5 === 0 || !S.news.length) jobs.push(run(fetchNews()));
+    if (force || tick % 30 === 0 || !S.cal.length) jobs.push(run(fetchCal()));
+    await Promise.all(jobs);
+    tick++; save();
+  } finally { busy = false; render(); }
+}
+$("#refresh").onclick = () => cycle(true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) cycle(true); });
+window.addEventListener("resize", () => draw(analyze()));
+render(); cycle(true);
+setInterval(() => { if (!document.hidden) cycle(false); }, 60000);
+</script>
+</body>
+</html>
